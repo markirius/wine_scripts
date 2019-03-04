@@ -1,4 +1,4 @@
-# game_info directory
+## game_info directory
 
 This directory is required for script to work properly. At least, never
 remove game_info.txt file and data directory.
