@@ -1,7 +1,7 @@
 #!/bin/bash
 
-### Tools script for "Wine packing script"
-### Version 1.0.1
+### Tools script for Wine
+### Version 1.1
 ### Author: Kron
 ### Email: kron4ek@gmail.com
 ### Link to latest version:
@@ -28,6 +28,7 @@ if [ "$1" = "--help" ] || [ ! "$1" ]; then
 	clear
 	echo -e "Available arguments:\n"
 	echo -e "--cfq\t\t\trun winecfg"
+	echo -e "--tricks\t\t\trun winetricks"
 	echo -e "--reg\t\t\trun regedit"
 	echo -e "--fm\t\t\trun Wine file manager"
 	echo -e "--kill\t\t\tkill all running processes in prefix"
@@ -51,19 +52,29 @@ export WINEPREFIX="$DIR/prefix"
 export WINEDEBUG="-all"
 export WINEDLLOVERRIDES="winemenubuilder.exe="
 
+## Other variables
+
+export XDG_CACHE_HOME="$DIR/cache"
+
 # Get settings from settings file
-SYSWINE=0
-source "$DIR/settings_start"
+USE_SYSTEM_WINE=0
+source "$DIR/settings_start" &>/dev/null
+
+export WINEARCH=$PREFIX_ARCH
+
+# Use system Wine if GLIBC is older than required
+GLIBC_VERSION="$(ldd --version | head -n1 | sed 's/[^0-9]//g')"
+
+if [ "$GLIBC_VERSION" -lt "223" ]; then
+	USE_SYSTEM_WINE=1
+fi
 
 # Use system Wine if no Wine found in the directory
-if [ ! -f "$WINE" ] || [ $SYSWINE = 1 ]; then
+if [ ! -f "$WINE" ] || [ $USE_SYSTEM_WINE = 1 ]; then
 	export WINE=wine
 	export WINESERVER=wineserver
 
-	SYSWINE=1
-
-	# Increase file descriptors limit just in case
-	ulimit -n 100000
+	USE_SYSTEM_WINE=1
 fi
 
 cd "$DIR" || exit
@@ -73,7 +84,12 @@ shopt -s extglob
 if [ "$1" = "--clean" ]; then
 	if [ ! -d "$DIR/game_info/data" ] || [ ! -f "$DIR/start.sh" ]; then exit; fi
 
-	rm -rf !(game_info|wine*|*.sh|documents|custom_vars|settings_*|prefix_*)
+	rm -rf !(game_info|wine*|*.sh|cache|documents|settings_*|prefix_*)
+	rm -rf .temp_files
+
+	if cd cache; then
+		rm -rf !(winetricks)
+	fi
 
 	clear; echo "Directory has been cleaned."
 	exit
@@ -129,4 +145,16 @@ elif [ "$1" = "--kill" ]; then
 	"$WINESERVER" -k
 elif [ "$1" = "--fm" ]; then
 	"$WINE" winefile
+elif [ "$1" = "--tricks" ]; then
+	if [ ! -f "$DIR/winetricks" ]; then
+		echo "Winetricks not found"; exit
+	fi
+
+	for arg in "$@"; do
+		if [ "$arg" != "--tricks" ]; then
+			ARGS="$ARGS $arg"
+		fi
+	done
+
+	"$DIR/winetricks" $ARGS
 fi
