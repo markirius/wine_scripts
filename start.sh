@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### Wine launching script
+### Wine Portable start script
 ### Version 1.2
 ### Author: Kron
 ### Email: kron4ek@gmail.com
@@ -9,9 +9,8 @@
 ###		Google.Drive: https://drive.google.com/open?id=1fTfJQhQSzlEkY-j3g0H6p4lwmQayUNSR
 ###		Github: https://github.com/Kron4ek/wine_scripts
 
-#### Script for packing, distributing and launching Windows games
-#### and programs in Linux using Wine. It works in all Linux
-#### distributions which have bash shell and standard GNU utilities.
+#### Script for creating portable Wine applications. It works in all Linux
+#### distributions that have bash shell and standard GNU utilities.
 
 ## Exit if root
 
