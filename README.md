@@ -1,9 +1,10 @@
 ## Scripts description
 
 These scripts are intended to simplify packing, launching and distributing
-Windows games and programs using Wine, but it also can be used for other
-purposes. These scripts will work on all Linux distributions with GNU
-standard utilities and bash shell installed.
+Windows games and programs using Wine. In other words, these scripts are for 
+creating portable Wine applications. But they also can be used for other purposes. 
+These scripts will work on all Linux distributions with GNU standard utilities and bash 
+shell installed.
 
 ## start.sh script description
 
