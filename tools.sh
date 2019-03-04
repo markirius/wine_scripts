@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### Tools script for Wine
+### Wine Portable tools script
 ### Version 1.1
 ### Author: Kron
 ### Email: kron4ek@gmail.com
@@ -11,9 +11,9 @@
 
 #### Script for launching Wine tools such as winecfg, regedit
 #### and winefile. Also this script can cleanup directory from
-#### unnecessary file, create icons in Applications Menu and Desktop
-#### and kill all processes in preifx.  This script is helper for
-#### "Wine packing script".
+#### unnecessary files, create icons in Applications Menu and Desktop
+#### and kill all processes in preifx. It can also use winetricks
+#### to istall components and apply tweaks.
 
 ## Exit if root
 
