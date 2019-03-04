@@ -1,0 +1,33 @@
+05.03.19 v1.2:
+	* Script now accepts additional arguments as arguments for the application
+		executable. For example, for launching the game with -opengl -nodx
+		arguments launch the script with the same arguments:
+		./start.sh -opengl -nodx
+	* Added the ability to use winetricks in tools.sh script
+	* Added the ability to use winetricks for installing components and
+		applying tweaks during prefix creation. Add components/tweaks names
+		into game_info/winetricks_list.txt file and winetricks will automatically
+		install them. Winetricks itself will be downloaded by script automatically
+		if it's not installed.
+		More info in game_info/readme_en.txt file.
+	* Script now uses XDG_CACHE_HOME directory for storing cache directory
+		near itself. This directory is used for storing fonts caches, shader
+		caches, etc. And it's also used for
+		files that winetricks downloads.
+	* Cache and log files of DXVK now stores in cache/dxvk directory.
+	* Most variable from settings_SCRIPTNAME file are renamed to be more
+		meaningful.
+	* Script now output more useful information during prefix creation
+		and hides useless information.
+	* Script output redirection to different file is not removed as it
+		breaks some games (For example, The Sims 4)
+	* Resolution restoration is now correctly works with multi-monitor
+		configurations (thanks to guys from RuTracker).
+	* Using of game_info/additional directory is changed and simplified.
+		It now uses directories that match the real one.
+		More info in game_info/readme_en.txt file.
+	* File descriptors limit is not rises to 500k when ESYNC is enabled.
+		Because the old 100k isn't enough for some games.
+	* GLIBC version checking is added back.
+	* Documentation updated.
+	* Some additional fixes and impovements.
