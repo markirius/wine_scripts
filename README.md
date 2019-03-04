@@ -1,58 +1,59 @@
-Этот набор скриптов предназначен в первую очередь для облегчения
-упаковки, запуска и распространения Windows игр и программ, но может
-применяться и в других целях. Скрипты будут работать на всех дистрибутивах
-Linux, где установлены стандартные утилиты GNU и оболочка bash.
+## Scripts description
 
-================== Описание скрипта start.sh ==========================
+These scripts are intended to simplify packing, launching and distributing
+Windows games and programs using Wine, but it also can be used for other
+purposes. These scripts will work on all Linux distributions with GNU
+standard utilities and bash shell installed.
 
-Настройки скрипта (переменные которые можно изменить), хранятся в файле
-settings_start или settings_НАЗВАНИЕСКРИПТА. Там же находится и описание
-этих переменных.
+## start.sh script description
 
-Для изменения разрядности префикса на 32-бита, измените значение
-переменной WINEARCH на win32 в файле settings_НАЗВАНИЕСКРИПТА
+All script settings (variables) are in the settings_start file or in the
+settings_SCRIPTNAME file.
 
-Скрипт можно запустить с параметрами:
+To change prefix architecture to 32-bit change PREFIX_ARCH variable
+to win32 in settings_SCRIPTNAME file.
 
-	--debug - для включения отладочной информации, полезно
-		при проблемах с игрой
+Script can be launched with --debug parameter to enable more output. This
+helps in finding problems when application not working.
 
-Скрипт автоматически использует системный Wine, если рядом с ним
-отсутствует каталог wine.
+Script automatically uses system Wine if there is no wine directory
+near the script or if GLIBC version in the system is older than 2.23.
 
-Скрипт активно использует стороние файлы и создает префикс с нуля при
-первом запуске, применяя различные настройки из каталога game_info. Скрипт
-не предназначем для работы с готовым префиксом.
+Script automatically creates new prefix during first run and it uses
+files from game_info directory. Script is not inteded to work with
+already created prefixes.
 
-Скрипт создает каталог documents, в котором будут храниться настройки
-и сохранения игр. Удаление префикса в большинстве случаев
-не повлияет на сохранения и настройки игр/программ.
+Script creates documents directory to store games settings and saves.
+And so removing prefix will not affect game saves/settings most of the time.
 
-Скрипт автоматически пересоздает префикс при изменении имени
-пользователя или версии Wine.
+Script automatically recreates prefix if username or Wine versions changes.
 
-Название файла настроек и файла game_info.txt зависит от имени скрипта.
-Если скрипт, допустим, называется start-addon.sh он автоматически будет
-использовать для настройки файл settings_start-addon и файл
-game_info_start-addon.txt, если он есть. Если его нет, будет использоваться
-просто game_info.txt. Таким образом можно делать копии скрипта start.sh,
-использующие разные настройки и запускающие разные exe файлы.
+Settings file name and game_info.txt name depends on script name.
+For example, if script is named start-addon.sh then it will use
+settings_start-addon file and game_info-start-addon.txt file if it exists.
+If there is not game_info-scriptname.txt file then script will use standard
+game_info.txt file. So you can make copies of start.sh script with different
+name and they will use different settings and can launch different exe
+files.
 
-===================== Описание скрипта tools.sh =======================
+## tools.sh script description
 
-Скрипт tools.sh может запускаться с параметрами:
+Tools.sh script can be launched with these arguments:
 
-	--cfg - запускает winecfg
-	--reg - запускает regedit
-	--kill - убивает все запущенные из под текущего префикса процессы Wine
-	--fm - запускает файловый менеджер
-	--clean - удаляет почти все ненужные файлы из каталога
-	--icons - создает на рабочем столе и в меню приложений иконку для
-				запуска игры
-	--remove-icons - удаляет созданную иконку
-	--help - показать доступные параметры
+	--cfg - run winecfg
+	--reg - run regedit
+	--tricks - if used without additional arguments then run winetricks GUI.
+		It can also be used with additional arguments, like:
+		./tools.sh --tricks d3dx9 corefonts.
+	--kill - kill all running processes of specific Wine prefix
+	--fm - run Wine filemanager
+	--clean - remove almost all unneeded files from directory
+	--icons - create application icons on Desktop and in applications menu
+	-- remove-icons - remove created icons
+	--help - show available arguments
 
-=======================================================================
 
-Описание каталогов и файлов каталога game_info содержится в readme.txt
-файлах в каталоге game_info.
+---
+
+Description of directories and files of game_info dirctory are in the
+game_info/README.md file.
