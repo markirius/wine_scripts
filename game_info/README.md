@@ -1,75 +1,89 @@
-Эта директория необходима для работы скрипта. Как минимум, никогда не
-удаляйте файл game_info.txt и каталог data.
+## game_info directory
 
-Остальные каталоги и файлы можно удалить или не создавать,
-если вы не собираетесь их использовать.
+This directory is required for script to work properly. At least, never
+remove game_info.txt file and data directory.
 
-Описание директорий/файлов:
+Other directories and fiels are not strictly necessary and can be optionally
+removed or not created.
 
-game_info.txt - информация об игре
-data - каталог с файлами игры
-dlls - библиотеки и прочие файлы, которые нужно поместить в system32
-additional - специфические файлы (например, настройки для игры или шрифты)
-regs - твики для реестра
-exe - исполняемые файлы (чаще всего, установщики разных программ)
-sh - скрипты, выполняемые при создании префикса или при каждом запуске игры
-icon - изображение для иконки игры, используемое скриптом tools.sh
+## Directories/files description:
 
-Более подробное описание каталогов ниже.
+* game_info.txt - information about the game
+* data - directory containing game files
+* dlls - libraries and other files intended to put into system32 directory
+* additional - specific files (for example, settings for games or fonts)
+* regs - tweaks for registry
+* exe - executable files (mostly, installers of different programs)
+* sh - scripts that will be executed during prefix creation
+* icon - game icon file, tools.sh use it for desktop file
 
-========================= Каталог data ================================
+## WINETRICKS:
 
-Здесь должны находиться файлы игры.
+* winetricks_list.txt - list of component to install using winetricks
 
-========================= Каталог dlls ================================
+During prefix creating winetricks will automatically install all components
+and apply all tweaks from winetricks_list.txt file. Write names of components
+and tweaks in first line, separated by a space.
 
-Здесь должны находится файлы, которые нужно поместить в каталог
-windows/system32 при первом создании префикса.
+For example: d3dx9 corefonts xact dxvk win8.
 
-Скрипт также автоматически переопределит эти файлы на
-"Сторонние" в winecfg и зарегистрирует с помощью regsvr32.
-В основном, сюда нужно класть dll файлы, но можно также класть файлы
-с любыми другими расширениями.
+## Directories description:
 
-====================== Каталог dlls/nooverride ===========================
+### data directory
 
-Каталог для отключения переопределений отдельных файлов из каталога dlls.
+Put game files here.
 
-Чтобы отключить переопределение (overriding) для конкретного файла,
-добавьте в этот каталог пустой файл: название.dll_nooverride
+## dlls directory
 
-Например, если в каталоге game_info/dlls есть библиотека d3d11.dll,
-можно заставить скрипт не переопределять эту библиотеку, создав пустой
-файл game_info/dlls/special/d3d11.dll_nooverride
+Put here ibraries and other files intended to put into system32 directory
 
-============================ Каталог exe ==============================
+Script will automatically copy them to windows/system32 directory. And also
+it will automatically override them to "Native" and will register them
+using regsvr32.
 
-Здесь должны находиться исполняемые файлы (например, установочники).
+You cat put here not only dlls but also files with any other extensions.
 
-Скрипт автоматически выполнит все файлы из этого каталога
-при создании префикса.
+## exe directory
 
-============================ Каталог regs =============================
+Put executable files here (for example, installers).
 
-Здесь должны находиться reg файлы.
+Script will automatically execute all files from this directory during
+prefix creation.
 
-Скрипт автоматически применит все reg файлы из этого каталога
-при создании префикса.
+## regs directory
 
-============================= Каталог sh ==============================
 
-Здесь должны находиться скрипты.
+Put registry files here.
 
-Скрипт автоматически выполнит все скрипты в этом каталоге
-при создании префикса.
+Script will automatically import all reg files from this directory during
+prefix creation.
 
-======================== Каталог sh/everytime =========================
+## sh directory
 
-Здесь должны находиться скрипты.
+Put custom shell scripts here.
 
-Скрипт автоматически будет выполнять все скрипты в этом каталоге
-при каждом запуске игры/программы.
+Script will automatically execute all scripts from this directory
+during prefix creation.
 
-======================== Каталог additional ===========================
+## sh/everytime directory
 
-Описание находится в файле additional/readme.txt
+Put custom shell scripts here.
+
+Script will automatically execute all scripts from this directory
+each time the game/application launches.
+
+## additional directory
+
+Put any custom files/directories there. The names of directories should
+be the same as the name of directories you want to copy to. For example:
+
+
+The content of game_info/additional/prefix/drive_c/Windows/Fonts directory
+will be copied to prefix/drive_c/Windows/Fonts directory during prefix
+creation.
+
+The content of game_info/additional/documents/Domcuments_Multilocale/My Games/Fallout4
+directory will be copied to documents/Domcuments_Multilocale/My Games/Fallout4
+directory during prefix creation.
+
+Etc.
