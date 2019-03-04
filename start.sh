@@ -1,7 +1,7 @@
 #!/bin/bash
 
-### Wine packing script
-### Version 1.1.6
+### Wine launching script
+### Version 1.2
 ### Author: Kron
 ### Email: kron4ek@gmail.com
 ### Link to latest version:
@@ -52,48 +52,54 @@ export WINEDLLOVERRIDES="winemenubuilder.exe="
 # Enable WINEDEBUG if --debug argument is passed to script
 if [ "$1" = "--debug" ]; then export WINEDEBUG="err+all,fixme-all"; fi
 
+## Other variables
+
+export XDG_CACHE_HOME="$DIR/cache"
+export DXVK_LOG_PATH="$DIR/cache/dxvk"
+export DXVK_STATE_CACHE_PATH="$DIR/cache/dxvk"
+
+USERNAME="$(id -un)"
+
 ## Script variables
 
 # Get settings (variables) from settings file if exists
 SCRIPT_NAME="$(basename "$SCRIPT" | cut -d. -f1)"
-source "$DIR/settings_$SCRIPT_NAME"
-source "$DIR/custom_vars"
+source "$DIR/settings_$SCRIPT_NAME" &>/dev/null
 
-# Generate settings file if it not exists or incomplete
-if [ -z $CSMT_DISABLE ] || [ -z $DXVK ] || [ -z $USEPULSE ] || [ -z $PBA_DISABLE ]; then
-	# Disables CSMT
-	CSMT_DISABLE=0; echo "CSMT_DISABLE=$CSMT_DISABLE" > "$DIR/settings_$SCRIPT_NAME"
-	# Enables DXVK (requires d3d11.dll and dxgi.dll)
-	DXVK=1; echo "DXVK=$DXVK" >> "$DIR/settings_$SCRIPT_NAME"
-	# Enables virtual desktop
-	WINDOWED=0; echo "WINDOWED=$WINDOWED" >> "$DIR/settings_$SCRIPT_NAME"
-	# Set virtual desktop size
-	WINDOW_RES=800x600; echo "WINDOW_RES=$WINDOW_RES" >> "$DIR/settings_$SCRIPT_NAME"
-	# Use PulseAudio instead of ALSA
-	USEPULSE=0; echo "USEPULSE=$USEPULSE" >> "$DIR/settings_$SCRIPT_NAME"
-	# Restore screen resolution after close game
-	FIXRES=1; echo "FIXRES=$FIXRES" >> "$DIR/settings_$SCRIPT_NAME"
-	# Use system Wine
-	SYSWINE=0; echo "SYSWINE=$SYSWINE" >> "$DIR/settings_$SCRIPT_NAME"
-	# Set windows version (win7, winxp, win2k)
-	WINVER=win7; echo "WINVER=$WINVER" >> "$DIR/settings_$SCRIPT_NAME"
-	# Set prefix architecture
-	WINEARCH=win64; echo "WINEARCH=$WINEARCH" >> "$DIR/settings_$SCRIPT_NAME"
+# Generate settings file if it's not exists or incomplete
+if [ -z $CSMT_DISABLE ] || [ -z $DXVK ] || [ -z $USE_PULSEAUDIO ] || [ -z $PBA ]; then
+	CSMT_DISABLE=0; echo "CSMT_DISABLE=0" > "$DIR/settings_$SCRIPT_NAME"
+	USE_PULSEAUDIO=0; echo "USE_PULSEAUDIO=0" >> "$DIR/settings_$SCRIPT_NAME"
+	USE_SYSTEM_WINE=0; echo "USE_SYSTEM_WINE=0" >> "$DIR/settings_$SCRIPT_NAME"
+	RESTORE_RESOLUTION=1; echo "RESTORE_RESOLUTION=1" >> "$DIR/settings_$SCRIPT_NAME"
+	VIRTUAL_DESKTOP=0; echo "VIRTUAL_DESKTOP=0" >> "$DIR/settings_$SCRIPT_NAME"
+	VIRTUAL_DESKTOP_SIZE=800x600; echo "VIRTUAL_DESKTOP_SIZE=800x600" >> "$DIR/settings_$SCRIPT_NAME"
 	echo >> "$DIR/settings_$SCRIPT_NAME"
-	export WINEESYNC=1; echo "export WINEESYNC=$WINEESYNC" >> "$DIR/settings_$SCRIPT_NAME"
-	export PBA_DISABLE=1; echo "export PBA_DISABLE=$PBA_DISABLE" >> "$DIR/settings_$SCRIPT_NAME"
+	DXVK=1; echo "DXVK=1" >> "$DIR/settings_$SCRIPT_NAME"
+	DXVK_HUD=0; echo "DXVK_HUD=0" >> "$DIR/settings_$SCRIPT_NAME"
+	ESYNC=1; echo "ESYNC=1" >> "$DIR/settings_$SCRIPT_NAME"
+	PBA=0; echo "PBA=0" >> "$DIR/settings_$SCRIPT_NAME"
+	echo >> "$DIR/settings_$SCRIPT_NAME"
+	WINDOWS_VERSION=win7; echo "WINDOWS_VERSION=win7" >> "$DIR/settings_$SCRIPT_NAME"
+	PREFIX_ARCH=win64; echo "PREFIX_ARCH=win64" >> "$DIR/settings_$SCRIPT_NAME"
 	echo >> "$DIR/settings_$SCRIPT_NAME"
 	echo "# You can also put custom variables in this file" >> "$DIR/settings_$SCRIPT_NAME"
 fi
 
-# Enable virtual desktop if WINDOWED env is set to 1 or --window argument is passed
-if [ $WINDOWED = 1 ]; then
-	export VIRTUAL_DESKTOP="explorer /desktop=Wine,$WINDOW_RES"
+export DXVK_HUD
+export WINEESYNC=$ESYNC
+export PBA_ENABLE=$PBA
+export WINEARCH=$PREFIX_ARCH
+
+# Enable virtual desktop if VIRTUAL_DESKTOP env is set to 1
+if [ $VIRTUAL_DESKTOP = 1 ]; then
+	VDESKTOP="explorer /desktop=Wine,$VIRTUAL_DESKTOP_SIZE"
 fi
 
 # Get current screen resolution
-if [ $FIXRES = 1 ]; then
-	RESOLUTION="$(xrandr | grep \* | awk '{print $1}')"
+if [ $RESTORE_RESOLUTION = 1 ]; then
+	RESOLUTION="$(xrandr -q | sed -n -e 's/.* connected primary \([^ +]*\).*/\1/p')"
+    OUTPUT="$(xrandr -q | sed -n -e 's/\([^ ]*\) connected primary.*/\1/p')"
 fi
 
 # Make Wine binaries executable
@@ -101,48 +107,52 @@ if [ -d "$DIR/wine" ] && [ ! -x "$DIR/wine/bin/wine" ]; then
 	chmod -R 700 "$DIR/wine"
 fi
 
+# Use system Wine if GLIBC is older than required
+GLIBC_VERSION="$(ldd --version | head -n1 | sed 's/[^0-9]//g')"
+
+if [ "$GLIBC_VERSION" -lt "223" ]; then
+	USE_SYSTEM_WINE=1
+fi
+
 # Use system Wine if no Wine found in the directory
-if [ ! -f "$WINE" ] || [ $SYSWINE = 1 ]; then
+if [ ! -f "$WINE" ] || [ $USE_SYSTEM_WINE = 1 ]; then
 	WINE=wine
 	WINE64=wine64
 	WINESERVER=wineserver
 
-	SYSWINE=1
-
-	# Increase file descriptors limit just in case
-	ulimit -n 100000
+	USE_SYSTEM_WINE=1
 fi
 
 # Check if Wine has PBA or ESYNC features
-mkdir "$DIR/temp_files"
-if [ ! -f "$DIR/temp_files/pba_status" ]; then
-	if grep PBA "$DIR/wine/lib/wine/wined3d.dll.so" || grep PBA "$DIR/wine/lib64/wine/wined3d.dll.so"; then
-		echo "yes" > "$DIR/temp_files/pba_status"
+mkdir -p "$DIR/.temp_files"
+if [ ! -f "$DIR/.temp_files/pba_status" ]; then
+	if grep PBA "$DIR/wine/lib/wine/wined3d.dll.so" &>/dev/null || grep PBA "$DIR/wine/lib64/wine/wined3d.dll.so" &>/dev/null; then
+		echo "yes" > "$DIR/.temp_files/pba_status"
 	else
-		echo "no" > "$DIR/temp_files/pba_status"
+		echo "no" > "$DIR/.temp_files/pba_status"
 	fi
 fi
 
-if [ ! -f "$DIR/temp_files/esync_status" ]; then
-	if grep ESYNC "$DIR/wine/lib/wine/ntdll.dll.so" || grep ESYNC "$DIR/wine/lib64/wine/ntdll.dll.so"; then
-		echo "yes" > "$DIR/temp_files/esync_status"
+if [ ! -f "$DIR/.temp_files/esync_status" ]; then
+	if grep ESYNC "$DIR/wine/lib/wine/ntdll.dll.so" &>/dev/null || grep ESYNC "$DIR/wine/lib64/wine/ntdll.dll.so" &>/dev/null; then
+		echo "yes" > "$DIR/.temp_files/esync_status"
 	else
-		echo "no" > "$DIR/temp_files/esync_status"
+		echo "no" > "$DIR/.temp_files/esync_status"
 	fi
 fi
 
-if [ "$(cat "$DIR/temp_files/pba_status")" = "no" ] || [ $SYSWINE = 1 ]; then
+if [ "$(cat "$DIR/.temp_files/pba_status")" = "no" ] || [ $USE_SYSTEM_WINE = 1 ]; then
 	NO_PBA_FOUND=1
 else NO_PBA_FOUND=0; fi
 
-if [ "$(cat "$DIR/temp_files/esync_status")" = "no" ] || [ $SYSWINE = 1 ]; then
+if [ "$(cat "$DIR/.temp_files/esync_status")" = "no" ] || [ $USE_SYSTEM_WINE = 1 ]; then
 	NO_ESYNC_FOUND=1
 else NO_ESYNC_FOUND=0; fi
 
 # Disable ESYNC if ulimit fails
 ESYNC_FORCE_OFF=0
 if [ $NO_ESYNC_FOUND = 0 ] && [ $WINEESYNC = 1 ]; then
-	if ! ulimit -n 100000; then
+	if ! ulimit -n 500000 &>/dev/null; then
 		export WINEESYNC=0
 		ESYNC_FORCE_OFF=1
 	fi
@@ -162,6 +172,12 @@ VERSION="$(echo "$GAME_INFO" | sed -n 2p)"
 GAME_PATH="$WINEPREFIX/drive_c/$(echo "$GAME_INFO" | sed -n 1p)"
 EXE="$(echo "$GAME_INFO" | sed -n 3p)"
 ARGS="$(echo "$GAME_INFO" | sed -n 4p)"
+
+for arg in "$@"; do
+	if [ "$arg" != "--debug" ]; then
+		ARGS="$ARGS $arg"
+    fi
+done
 
 ### Prepare for launching game
 
@@ -201,82 +217,102 @@ cd "$DIR" || exit
 
 ## Setup prefix
 
-if [ ! -d prefix ] || [ "$(id -un)" != "$(cat temp_files/lastuser)" ] || [ "$WINE_VERSION" != "$(cat temp_files/lastwine)" ]; then
+if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WINE_VERSION" != "$(cat .temp_files/lastwine)" ]; then
 	# Move old prefix just in case
-	mv prefix "prefix_$(date '+%d:%m_%H:%M:%S')"
+	mv prefix "prefix_$(date '+%d.%m_%H:%M:%S')" &>/dev/null
 
-	# Remove temp_files directory
-	rm -r temp_files
+	# Remove .temp_files directory
+	rm -rf .temp_files
 
 	# Create prefix
-	clear; echo "Creating prefix, please wait."
+	echo "Creating prefix, please wait."
+	echo
 
 	export WINEDLLOVERRIDES="$WINEDLLOVERRIDES;mscoree,mshtml="
-	"$WINE" wineboot
+	"$WINE" wineboot &>/dev/null
 	"$WINESERVER" -w
 	export WINEDLLOVERRIDES="winemenubuilder.exe="
 
 	# Create symlink to game directory
-	mkdir -p "$GAME_PATH"; rm -r "$GAME_PATH"
+	mkdir -p "$GAME_PATH"; rm -rf "$GAME_PATH"
 	ln -sfr game_info/data "$GAME_PATH"
 
 	# Execute files in game_info/exe directory
 	if [ -d game_info/exe ]; then
-		for file in game_info/exe/*; do
-			clear; echo "Executing file $file"
+		echo "Executing files"
 
-			"$WINE" start "$file"
+		for file in game_info/exe/*; do
+			echo "Executing file $file"
+
+			"$WINE" start "$file" &>/dev/null
 			"$WINESERVER" -w
 		done
 	fi
 
 	# Apply reg files
 	if [ -d game_info/regs ]; then
+		echo "Importing registry files"
+
 		for file in game_info/regs/*.reg; do
-			"$WINE" regedit "$file"
-			"$WINE64" regedit "$file"
+			echo "Importing $file"
+
+			"$WINE" regedit "$file" &>/dev/null
+			"$WINE64" regedit "$file" &>/dev/null
 		done
 	fi
 
 	# Symlink requeired dlls, override and register them
 	if [ -d game_info/dlls ]; then
+		echo "Symlinking and registering dlls"
+
 		echo -e "Windows Registry Editor Version 5.00\n" > dlloverrides.reg
 		echo -e "[HKEY_CURRENT_USER\Software\Wine\DllOverrides]" >> dlloverrides.reg
 
 		for x in game_info/dlls/*; do
-			if [ ! -d "$x" ]; then
-				ln -sfr "$x" "$WINEPREFIX/drive_c/windows/system32"
+			echo "Creating symlink to $x"
 
-				# Do not override component if required
-				if [ ! -f "game_info/dlls/nooverride/$(basename $x)" ]; then
-					echo -e '"'$(basename $x .dll)'"="native"' >> dlloverrides.reg
-				fi
+			ln -sfr "$x" "$WINEPREFIX/drive_c/windows/system32"
 
-				# Register component with regsvr32
-				"$WINE" regsvr32 "$(basename $x)"
-				"$WINE64" regsvr32 "$(basename $x)"
-			fi
+			# Do not override component if required
+			echo -e '"'$(basename $x .dll)'"="native"' >> dlloverrides.reg
+
+			# Register component with regsvr32
+			echo "Registering $(basename $x)"
+
+			"$WINE" regsvr32 "$(basename $x)" &>/dev/null
+			"$WINE64" regsvr32 "$(basename $x)" &>/dev/null
 		done
 
-		"$WINE" regedit dlloverrides.reg
-		"$WINE64" regedit dlloverrides.reg
-		rm dlloverrides.reg
+		echo "Overriding dlls"
+
+		"$WINE" regedit dlloverrides.reg &>/dev/null
+		"$WINE64" regedit dlloverrides.reg &>/dev/null
+
+		rm -f dlloverrides.reg
 	fi
 
 	# Make documents directory
-	if [ ! -d "$DIR/documents" ]; then
-		mv "$WINEPREFIX/drive_c/users/$(id -un)" "$DIR/documents"
+	echo "Sandboxing prefix"
+
+	# Valve's Proton uses steamuser as username
+	if [ -d "$WINEPREFIX/drive_c/users/steamuser" ]; then
+		USERNAME=steamuser
 	fi
-	rm -r "$WINEPREFIX/drive_c/users/$(id -un)"
-	ln -sfr "$DIR/documents" "$WINEPREFIX/drive_c/users/$(id -un)"
+
+	if [ ! -d "$DIR/documents" ]; then
+		mv "$WINEPREFIX/drive_c/users/$USERNAME" "$DIR/documents" &>/dev/null
+	fi
+	rm -rf "$WINEPREFIX/drive_c/users/$USERNAME"
+	ln -sfr "$DIR/documents" "$WINEPREFIX/drive_c/users/$USERNAME"
 
 	# Sandbox the prefix; Borrowed from winetricks scripts
 	rm -f "$WINEPREFIX/dosdevices/z:"
+	ln -sfr "$DIR" "$WINEPREFIX/dosdevices/k:"
 
-	if cd "$WINEPREFIX/drive_c/users/$(id -un)"; then
+	if cd "$WINEPREFIX/drive_c/users/$USERNAME"; then
 		# Use one directory to all symlinks
 		# This is necessarry for multilocale compatibility
-		mkdir Documents_Multilocale
+		mkdir -p Documents_Multilocale
 
 		for x in *; do
 			if test -h "$x" && test -d "$x"; then
@@ -288,130 +324,172 @@ if [ ! -d prefix ] || [ "$(id -un)" != "$(cat temp_files/lastuser)" ] || [ "$WIN
 		cd "$DIR"
 	fi
 
-	"$WINE" regedit /D 'HKEY_LOCAL_MACHINE\\Software\\Microsoft\Windows\CurrentVersion\Explorer\Desktop\Namespace\{9D20AAE8-0625-44B0-9CA7-71889C2254D9}'
+	"$WINE" regedit /D 'HKEY_LOCAL_MACHINE\\Software\\Microsoft\Windows\CurrentVersion\Explorer\Desktop\Namespace\{9D20AAE8-0625-44B0-9CA7-71889C2254D9}' &>/dev/null
 	echo disable > "$WINEPREFIX/.update-timestamp"
 
 	# Copy content from additional directories
 	if [ -d game_info/additional ]; then
-		for (( i=1; i <= $(ls -d game_info/additional/*/ | wc -l); i++ )); do
-			ADD_PATH="$WINEPREFIX/drive_c/$(cat game_info/additional/path.txt | sed -n "$i"p | sed "s/--REPLACE_WITH_USERNAME--/$(id -un)/g")"
+		for f in game_info/additional/*; do
+			echo "Copying $f"
 
-			mkdir -p "$ADD_PATH"
-
-			if [ -f game_info/additional/dir_$i/dosymlink ]; then
-				for file in game_info/additional/dir_$i/*; do
-					if [ -d "$ADD_PATH/$(basename "$file")" ]; then
-						rm -r "$ADD_PATH/$(basename "$file")"
-					fi
-
-					ln -sfr "$file" "$ADD_PATH"
-				done
-			else
-				cp -r game_info/additional/dir_$i/* "$ADD_PATH"
-			fi
+			cp -r "$f" "$DIR"
 		done
 	fi
 
 	# Execute scripts in game_info/sh directory
 	if [ -d game_info/sh ]; then
+		echo "Executing scripts"
+
 		chmod -R 700 game_info/sh
 
-		for file in game_info/sh/*.sh; do "$file"; done
+		for file in game_info/sh/*; do
+			echo "Executing $file"
+
+			"$file"
+		done
+	fi
+
+	# Execute custom winetricks actions
+	if [ -f game_info/winetricks_list.txt ]; then
+		if [ ! -f "$DIR/winetricks" ]; then
+			if ping -W 1 -c 1 8.8.8.8 &>/dev/null; then
+				echo "Downloading winetricks"
+
+				wget -O "$DIR/winetricks" "https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks" &>/dev/null
+			elif which winetricks &>/dev/null; then
+				ln -sf "$(which winetricks)" "$DIR/winetricks"
+			fi
+		fi
+
+		if [ -f "$DIR/winetricks" ]; then
+			if [ ! -x "$DIR/winetricks" ]; then
+				chmod +x "$DIR/winetricks"
+			fi
+
+			echo "winetricks $(cat game_info/winetricks_list.txt)"
+			echo "Executing winetricks actions, please wait."
+
+			"$WINESERVER" -w
+			"$DIR/winetricks" $(cat game_info/winetricks_list.txt) &>/dev/null
+			"$WINESERVER" -w
+		else
+			"Winetricks not found and can't be downloaded (no internet connection)."
+		fi
 	fi
 
 	# Enable WINEDEBUG during first run
 	export WINEDEBUG="err+all,fixme-all"
 
 	# Save information about last user name and Wine version
-	mkdir temp_files
-	echo "$(id -un)" > temp_files/lastuser && echo "$WINE_VERSION" > temp_files/lastwine
+	mkdir -p .temp_files
+	echo "$USERNAME" > .temp_files/lastuser
+	echo "$WINE_VERSION" > .temp_files/lastwine
 fi
 
-## Set windows version; Borrowed from winetricks
+## Set windows version
 
-if [ "$WINVER" != "$(cat temp_files/lastwin)" ]; then
-	if [ "$WINVER" = "winxp" ]; then
-		csdversion="Service Pack 3"
-		currentbuildnumber="2600"
-		currentversion="5.1"
-		csdversion_hex=dword:00000300
-	elif [ "$WINVER" = "win2k" ]; then
-		csdversion="Service Pack 4"
-		currentbuildnumber="2195"
-		currentversion="5.0"
-		csdversion_hex=dword:00000400
-	elif [ "$WINVER" = "win7" ]; then
-		csdversion="Service Pack 1"
-		currentbuildnumber="7601"
-		currentversion="6.1"
-		csdversion_hex=dword:00000100
+if [ ! -f .temp_files/lastwin ] || [ "$WINDOWS_VERSION" != "$(cat .temp_files/lastwin)" ]; then
+	if [ "$WINDOWS_VERSION" = "winxp" ] || [ "$WINDOWS_VERSION" = "win10" ] || [ "$WINDOWS_VERSION" = "win7" ]; then
+		echo "Changing Windows version to $WINDOWS_VERSION"
 
-		"$WINE" reg add "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" /v ProductType /d "WinNT" /f
-		"$WINE64" reg add "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" /v ProductType /d "WinNT" /f
+		if [ "$WINDOWS_VERSION" = "winxp" ]; then
+			if [ "$WINEARCH" = "win32" ]; then
+				csdversion="Service Pack 3"
+				currentbuildnumber="2600"
+				currentversion="5.1"
+				csdversion_hex=dword:00000300
+			else
+                csdversion="Service Pack 2"
+                currentbuildnumber="3790"
+                currentversion="5.2"
+                csdversion_hex=dword:00000200
+
+                "$WINE" reg add "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" /v ProductType /d "WinNT" /f &>/dev/null
+             fi
+		elif [ "$WINDOWS_VERSION" = "win7" ]; then
+			csdversion="Service Pack 1"
+			currentbuildnumber="7601"
+			currentversion="6.1"
+			csdversion_hex=dword:00000100
+
+			"$WINE" reg add "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" /v ProductType /d "WinNT" /f &>/dev/null
+		elif [ "$WINDOWS_VERSION" = "win10" ]; then
+            csdversion=""
+            currentbuildnumber="10240"
+            currentversion="10.0"
+            csdversion_hex=dword:00000000
+
+            "$WINE" reg add "HKLM\\System\\CurrentControlSet\\Control\\ProductOptions" /v ProductType /d "WinNT" /f &>/dev/null
+        fi
+
+		echo -e "Windows Registry Editor Version 5.00\n" > "$WINEPREFIX/drive_c/setwinver.reg"
+		echo -e "[HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion]" >> "$WINEPREFIX/drive_c/setwinver.reg"
+		echo -e '"CSDVersion"="'$csdversion'"' >> "$WINEPREFIX/drive_c/setwinver.reg"
+		echo -e '"CurrentBuildNumber"="'$currentbuildnumber'"' >> "$WINEPREFIX/drive_c/setwinver.reg"
+		echo -e '"CurrentVersion"="'$currentversion'"' >> "$WINEPREFIX/drive_c/setwinver.reg"
+
+		echo -e "\n[HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Windows]" >> "$WINEPREFIX/drive_c/setwinver.reg"
+		echo -e '"CSDVersion"='$csdversion_hex'\n' >> "$WINEPREFIX/drive_c/setwinver.reg"
+
+		"$WINE" regedit C:\setwinver.reg &>/dev/null
+		"$WINE64" regedit C:\setwinver.reg &>/dev/null
+
+		rm -f "$WINEPREFIX/drive_c/setwinver.reg"
+		echo "$WINDOWS_VERSION" > .temp_files/lastwin
+	else
+		echo "Incorrect Windows version."
+		echo "Please, use one of the available versions: winxp, win2k or win7."
 	fi
-
-	# Create registry file
-	echo -e "Windows Registry Editor Version 5.00\n" > "$WINEPREFIX/drive_c/setwinver.reg"
-	echo -e "[HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion]" >> "$WINEPREFIX/drive_c/setwinver.reg"
-	echo -e '"CSDVersion"="'$csdversion'"' >> "$WINEPREFIX/drive_c/setwinver.reg"
-	echo -e '"CurrentBuildNumber"="'$currentbuildnumber'"' >> "$WINEPREFIX/drive_c/setwinver.reg"
-	echo -e '"CurrentVersion"="'$currentversion'"' >> "$WINEPREFIX/drive_c/setwinver.reg"
-
-	echo -e "\n[HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Windows]" >> "$WINEPREFIX/drive_c/setwinver.reg"
-	echo -e '"CSDVersion"='$csdversion_hex'\n' >> "$WINEPREFIX/drive_c/setwinver.reg"
-
-	# Apply and delete registry file
-	"$WINE" regedit C:\setwinver.reg
-	"$WINE64" regedit C:\setwinver.reg
-	rm "$WINEPREFIX/drive_c/setwinver.reg"
-	echo "$WINVER" > temp_files/lastwin
 fi
 
-## Set sound driver to PulseAudio; Borrowed from winetricks
+## Set sound driver to PulseAudio
 
-if [ $USEPULSE = 1 ] && [ ! -f "$WINEPREFIX/drive_c/usepulse.reg" ]; then
-	# Create registry file
+if [ $USE_PULSEAUDIO = 1 ] && [ ! -f "$WINEPREFIX/drive_c/usepulse.reg" ]; then
+	echo "Set audio driver to PulseAudio"
+
 	echo -e "Windows Registry Editor Version 5.00\n" > "$WINEPREFIX/drive_c/usepulse.reg"
 	echo -e "[HKEY_CURRENT_USER\\Software\\Wine\\Drivers]\n" >> "$WINEPREFIX/drive_c/usepulse.reg"
 	echo -e '"Audio"="pulse"' >> "$WINEPREFIX/drive_c/usepulse.reg"
 
-	# Apply registry file
-	"$WINE" regedit C:\usepulse.reg
-	"$WINE64" regedit C:\usepulse.reg
-	rm "$WINEPREFIX/drive_c/usealsa.reg"
-elif [ $USEPULSE = 0 ] && [ ! -f "$WINEPREFIX/drive_c/usealsa.reg" ]; then
-	# Create registry file
+	"$WINE" regedit C:\usepulse.reg &>/dev/null
+	"$WINE64" regedit C:\usepulse.reg &>/dev/null
+
+	rm -f "$WINEPREFIX/drive_c/usealsa.reg"
+elif [ $USE_PULSEAUDIO = 0 ] && [ ! -f "$WINEPREFIX/drive_c/usealsa.reg" ]; then
+	echo "Set audio driver to ALSA"
+
 	echo -e "Windows Registry Editor Version 5.00\n" > "$WINEPREFIX/drive_c/usealsa.reg"
 	echo -e "[HKEY_CURRENT_USER\\Software\\Wine\\Drivers]\n" >> "$WINEPREFIX/drive_c/usealsa.reg"
 	echo -e '"Audio"="alsa"' >> "$WINEPREFIX/drive_c/usealsa.reg"
 
-	# Apply registry file
-	"$WINE" regedit C:\usealsa.reg
-	"$WINE64" regedit C:\usealsa.reg
-	rm "$WINEPREFIX/drive_c/usepulse.reg"
+	"$WINE" regedit C:\usealsa.reg &>/dev/null
+	"$WINE64" regedit C:\usealsa.reg &>/dev/null
+
+	rm -f "$WINEPREFIX/drive_c/usepulse.reg"
 fi
 
 ## Disable CSMT if required
 
 if [ $CSMT_DISABLE = 1 ] && [ ! -f "$WINEPREFIX/drive_c/csmt.reg" ]; then
-	# Create registry file
+	echo "Disabling CSMT"
+
 	echo -e "Windows Registry Editor Version 5.00\n" > "$WINEPREFIX/drive_c/csmt.reg"
 	echo -e "[HKEY_CURRENT_USER\Software\Wine\Direct3D]\n" >> "$WINEPREFIX/drive_c/csmt.reg"
 	echo -e '"csmt"=dword:0\n' >> "$WINEPREFIX/drive_c/csmt.reg"
 
-	# Apply registry file
-	"$WINE" regedit C:\csmt.reg
-	"$WINE64" regedit C:\csmt.reg
+	"$WINE" regedit C:\csmt.reg &>/dev/null
+	"$WINE64" regedit C:\csmt.reg &>/dev/null
 elif [ $CSMT_DISABLE = 0 ] && [ -f "$WINEPREFIX/drive_c/csmt.reg" ]; then
-	# Create registry file
+	echo "Enabling CSMT"
+
 	echo -e "Windows Registry Editor Version 5.00\n" > "$WINEPREFIX/drive_c/csmt.reg"
 	echo -e "[HKEY_CURRENT_USER\Software\Wine\Direct3D]\n" >> "$WINEPREFIX/drive_c/csmt.reg"
 	echo -e '"csmt"=-' >> "$WINEPREFIX/drive_c/csmt.reg"
 
-	# Apply registry file
-	"$WINE" regedit C:\csmt.reg
-	"$WINE64" regedit C:\csmt.reg
-	rm "$WINEPREFIX/drive_c/csmt.reg"
+	"$WINE" regedit C:\csmt.reg &>/dev/null
+	"$WINE64" regedit C:\csmt.reg &>/dev/null
+
+	rm -f "$WINEPREFIX/drive_c/csmt.reg"
 fi
 
 ## Disable DXVK if required
@@ -421,12 +499,26 @@ if [ $DXVK = 0 ]; then
 	export WINEDLLOVERRIDES="$WINEDLLOVERRIDES;dxgi,d3d10,d3d10_1,d3d10core,d3d11=b"
 elif [ $DXVK = 1 ] && [ -f "$DIR/game_info/dlls/dxgi.dll" ]; then
 	export WINEDLLOVERRIDES="$WINEDLLOVERRIDES;nvapi64,nvapi="
+
+	if [ ! -d "$DIR/cache/dxvk" ]; then
+		mkdir -p "$DIR/cache/dxvk"
+	fi
+
+	if [ ! -f "$WINEPREFIX/dosdevices/j:" ]; then
+		ln -sfr "$DIR/cache/dxvk" "$WINEPREFIX/dosdevices/j:"
+	fi
 fi
 
 ## Execute custom scripts
 
 if [ -d game_info/sh/everytime ]; then
-	for file in game_info/sh/everytime/*.sh; do "$file"; done
+	echo "Executing scripts"
+
+	for file in game_info/sh/everytime/*; do
+		echo "Executing $file"
+
+		"$file"
+	done
 fi
 
 ## Run the game
@@ -437,7 +529,7 @@ echo "======================================================="
 echo -e "\nGame: $GAME\nVersion: $VERSION"
 echo -ne "\nWine: $WINE_VERSION"
 
-if [ $SYSWINE = 1 ]; then echo -ne " (using system Wine)"; fi
+if [ $USE_SYSTEM_WINE = 1 ]; then echo -ne " (using system Wine)"; fi
 
 echo -ne "\nArch: x$(echo $WINEARCH | tail -c 3)"
 
@@ -446,7 +538,7 @@ if [ ! -f "$DIR/game_info/dlls/dxgi.dll" ] || [ $DXVK = 0 ]; then
 	else echo -ne "\nCSMT: enabled"; fi
 
 	if [ $NO_PBA_FOUND = 0 ]; then
-		if [ $PBA_DISABLE = 1 ]; then echo -ne "\nPBA: disabled"
+		if [ $PBA_ENABLE = 0 ]; then echo -ne "\nPBA: disabled"
 		else echo -ne "\nPBA: enabled"; fi
 	fi
 
@@ -459,7 +551,7 @@ if [ $NO_ESYNC_FOUND = 0 ]; then
 	if [ $WINEESYNC = 1 ]; then echo -ne "\nESYNC: enabled"
 	else echo -ne "\nESYNC: disabled"; fi
 
-	if [ $ESYNC_FORCE_OFF = 1 ]; then echo -ne " (force disable; ulimit failed)"; fi
+	if [ $ESYNC_FORCE_OFF = 1 ]; then echo -ne " (disabled; ulimit failed)"; fi
 fi
 
 echo -ne "\n\n======================================================="
@@ -467,13 +559,13 @@ echo -ne "\n\n======================================================="
 if [ $NO_ESYNC_FOUND = 0 ] && [ $ESYNC_FORCE_OFF = 1 ]; then
 	echo -ne "\n\nIf you want to enable ESYNC to improve game performance then"
 	echo -ne "\nconfigure open file limit in /etc/security/limits.conf, add line:"
-	echo -ne "\n\nUSERNAME hard nofile 150000"
+	echo -ne "\n\nUSERNAME hard nofile 500000"
 	echo -ne "\n\nAnd then reboot your system."
 	echo -ne "\n\n======================================================="
 fi
 
 if [ "$WINEDEBUG" = "-all" ]; then
-	echo -ne "\n\nIf the game doesn't work, run it with --debug parameter"
+	echo -ne "\n\nIf the game doesn't work, run script with --debug parameter"
 	echo -ne "\nto see more information: ./start.sh --debug"
 else
 	echo -ne "\n\nDebug mode enabled!"
@@ -481,15 +573,15 @@ fi
 
 echo -e "\n\n======================================================="
 echo
-echo "Output redirected to temp_files/start.log"
-echo
 
 # Launch the game
 cd "$GAME_PATH/$(echo "$GAME_INFO" | sed -n 5p)" || exit
-"$WINE" $VIRTUAL_DESKTOP "$EXE" $ARGS 2>> "$DIR/temp_files/start.log"
+"$WINESERVER" -w
+"$WINE" $VDESKTOP "$EXE" $ARGS
+"$WINESERVER" -w
 
 # Restore screen resolution
-if [ $FIXRES = 1 ]; then
-	"$WINESERVER" -w
-	xrandr -s $RESOLUTION
+if [ $RESTORE_RESOLUTION = 1 ]; then
+	xrandr --output "$OUTPUT" --mode "$RESOLUTION" &>/dev/null
+	xgamma -gamma 1.0 &>/dev/null
 fi
