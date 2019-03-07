@@ -21,7 +21,7 @@ removed or not created.
 
 * winetricks_list.txt - list of components to install using winetricks
 
-During prefix creating winetricks will automatically install all components
+During prefix creation winetricks will automatically install all components
 and apply all tweaks from winetricks_list.txt file. Write names of components
 and tweaks in first line, separated by a space.
 
