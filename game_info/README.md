@@ -27,6 +27,8 @@ and tweaks in first line, separated by a space.
 
 For example: d3dx9 corefonts xact dxvk win8.
 
+If winetricks is not installed then it will be automatically downloaded.
+
 ## Directories description:
 
 ### data directory
