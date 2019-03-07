@@ -19,7 +19,7 @@ removed or not created.
 
 ## WINETRICKS:
 
-* winetricks_list.txt - list of component to install using winetricks
+* winetricks_list.txt - list of components to install using winetricks
 
 During prefix creating winetricks will automatically install all components
 and apply all tweaks from winetricks_list.txt file. Write names of components
