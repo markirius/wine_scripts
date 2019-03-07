@@ -56,5 +56,5 @@ Tools.sh script can be launched with these arguments:
 
 ---
 
-Description of directories and files of game_info dirctory are in the
+Description of directories and files of game_info directory are in the
 game_info/README.md file.
