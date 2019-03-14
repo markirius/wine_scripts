@@ -31,3 +31,9 @@
 	* GLIBC version checking is added back.
 	* Documentation updated.
 	* Some additional fixes and impovements.
+=======================================================================
+14.03.19 v1.2.1:
+	* Fixed recreating prefixes on every script launch when Proton is used
+	* Directory drive_c/users/Public is now stores in documents directory
+		as sometimes applications stores there saves and settings
+	* Some additional fixes
