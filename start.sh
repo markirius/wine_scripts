@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### Wine Portable start script
-### Version 1.2
+### Version 1.2.1
 ### Author: Kron
 ### Email: kron4ek@gmail.com
 ### Link to latest version:
@@ -300,25 +300,37 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 
 	if [ ! -d "$DIR/documents" ]; then
 		mv "$WINEPREFIX/drive_c/users/$USERNAME" "$DIR/documents" &>/dev/null
+		mv "$WINEPREFIX/drive_c/users/Public" "$DIR/documents/Public"
 	fi
 	rm -rf "$WINEPREFIX/drive_c/users/$USERNAME"
+	rm -rf "$WINEPREFIX/drive_c/users/Public"
 	ln -sfr "$DIR/documents" "$WINEPREFIX/drive_c/users/$USERNAME"
+	ln -sfr "$DIR/documents/Public" "$WINEPREFIX/drive_c/users/Public"
+	ln -sfr "$DIR/documents" "$WINEPREFIX/drive_c/users/user"
 
 	# Sandbox the prefix; Borrowed from winetricks scripts
 	rm -f "$WINEPREFIX/dosdevices/z:"
 	ln -sfr "$DIR" "$WINEPREFIX/dosdevices/k:"
 
 	if cd "$WINEPREFIX/drive_c/users/$USERNAME"; then
-		# Use one directory to all symlinks
-		# This is necessarry for multilocale compatibility
+		# Use one directory for all symlinks
+		# This is necessary for multilocale compatibility
 		mkdir -p Documents_Multilocale
 
-		for x in *; do
-			if test -h "$x" && test -d "$x"; then
-				rm -f "$x"
-				ln -sfr Documents_Multilocale "$x"
-			fi
-		done
+		echo "Documents_Multilocale directory is for compatibility with different languages." > Documents_Multilocale/readme.txt
+		echo "Put all files into Documents_Multilocale instead of specific directories like My Documents, Мои документы etc." >> Documents_Multilocale/readme.txt
+
+		if [ "$USERNAME" != "steamuser" ]; then
+			for x in *; do
+				if test -h "$x" && test -d "$x"; then
+					rm -f "$x"
+					ln -sfr Documents_Multilocale "$x"
+				fi
+			done
+		else
+			[ -d "My Documents" ] && rm -rf "My Documents" && ln -sfr Documents_Multilocale "My Documents"
+			[ -d "Мои документы" ] && rm -rf "Мои документы" && ln -sfr Documents_Multilocale "Мои документы"
+		fi
 
 		cd "$DIR"
 	fi
@@ -372,7 +384,7 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 			"$DIR/winetricks" $(cat game_info/winetricks_list.txt) &>/dev/null
 			"$WINESERVER" -w
 		else
-			"Winetricks not found and can't be downloaded (no internet connection)."
+			echo "Winetricks not found and can't be downloaded (no internet connection)."
 		fi
 	fi
 
@@ -380,6 +392,8 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 	export WINEDEBUG="err+all,fixme-all"
 
 	# Save information about last user name and Wine version
+	USERNAME="$(id -un)"
+
 	mkdir -p .temp_files
 	echo "$USERNAME" > .temp_files/lastuser
 	echo "$WINE_VERSION" > .temp_files/lastwine
@@ -494,6 +508,18 @@ fi
 ## Disable DXVK if required
 ## Also disable nvapi library if DXVK is enabled
 
+if [ $DXVK = 1 ]; then
+	if [ ! -f "$DIR/game_info/dlls/dxgi.dll" ] && grep dxvk "$WINEPREFIX/winetricks.log" &>/dev/null; then
+		mkdir -p "$DIR/game_info/dlls"
+
+		cp "$WINEPREFIX/drive_c/windows/system32/d3d11.dll" "$DIR/game_info/dlls"
+		cp "$WINEPREFIX/drive_c/windows/system32/d3d10core.dll" "$DIR/game_info/dlls"
+		cp "$WINEPREFIX/drive_c/windows/system32/d3d10.dll" "$DIR/game_info/dlls"
+		cp "$WINEPREFIX/drive_c/windows/system32/d3d10_1.dll" "$DIR/game_info/dlls"
+		cp "$WINEPREFIX/drive_c/windows/system32/dxgi.dll" "$DIR/game_info/dlls"
+	fi
+fi
+
 if [ $DXVK = 0 ]; then
 	export WINEDLLOVERRIDES="$WINEDLLOVERRIDES;dxgi,d3d10,d3d10_1,d3d10core,d3d11=b"
 elif [ $DXVK = 1 ] && [ -f "$DIR/game_info/dlls/dxgi.dll" ]; then
@@ -503,7 +529,7 @@ elif [ $DXVK = 1 ] && [ -f "$DIR/game_info/dlls/dxgi.dll" ]; then
 		mkdir -p "$DIR/cache/dxvk"
 	fi
 
-	if [ ! -f "$WINEPREFIX/dosdevices/j:" ]; then
+	if [ ! -d "$WINEPREFIX/dosdevices/j:" ]; then
 		ln -sfr "$DIR/cache/dxvk" "$WINEPREFIX/dosdevices/j:"
 	fi
 fi
@@ -564,8 +590,8 @@ if [ $NO_ESYNC_FOUND = 0 ] && [ $ESYNC_FORCE_OFF = 1 ]; then
 fi
 
 if [ "$WINEDEBUG" = "-all" ]; then
-	echo -ne "\n\nIf the game doesn't work, run script with --debug parameter"
-	echo -ne "\nto see more information: ./start.sh --debug"
+	echo -ne "\n\nIf game doesn't work run the script with --debug parameter"
+	echo -ne "\nto see more output: ./start.sh --debug"
 else
 	echo -ne "\n\nDebug mode enabled!"
 fi
