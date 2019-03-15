@@ -114,7 +114,7 @@ if [ -d "$DIR/wine" ] && [ ! -x "$DIR/wine/bin/wine" ]; then
 fi
 
 # Use system Wine if GLIBC checking is enabled and GLIBC is older than required
-if [ $CHECK_GLIBC = 1 ]; then
+if [ $USE_SYSTEM_WINE = 0 ] && [ $CHECK_GLIBC = 1 ]; then
 	GLIBC_VERSION="$(ldd --version | head -n1 | sed 's/\(.*\) //g' | sed 's/\.[^.]*//2g')"
 
 	if [ "$(echo "${GLIBC_VERSION//./}")" -lt "$(echo "${GLIBC_REQUIRED//./}")" ]; then
