@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### Wine Portable start script
-### Version 1.2.1
+### Version 1.2.2
 ### Author: Kron
 ### Email: kron4ek@gmail.com
 ### Link to latest version:
@@ -122,13 +122,40 @@ if [ $CHECK_GLIBC = 1 ]; then
 	fi
 fi
 
-# Use system Wine if no Wine found in the directory
+# Use system Wine if needed
 if [ ! -f "$WINE" ] || [ $USE_SYSTEM_WINE = 1 ]; then
-	WINE=wine
-	WINE64=wine64
-	WINESERVER=wineserver
+	if command -v wine-development &>/dev/null; then
+		WINE=wine-development
+		WINE64=wine64-development
+		WINESERVER=wineserver-development
+	else
+		WINE=wine
+		WINE64=wine64
+		WINESERVER=wineserver
+	fi
 
 	USE_SYSTEM_WINE=1
+fi
+
+# Check WINEARCH variable and system architecture
+if [ "$WINEARCH" = "win64" ] && ! "$WINE64" --version &>/dev/null; then
+		echo "WINEARCH is set to win64."
+		echo "But seems like your Wine or your system is 32-bit."
+		echo "Use 64-bit Wine or set WINEARCH to win32."
+
+		if [ "$(uname -m)" != "x86_64" ]; then
+			echo -e "\nYour system is 32-bit!"
+		fi
+
+		exit
+elif [ "$WINEARCH" = "win32" ] && [ $USE_SYSTEM_WINE = 0 ]; then
+	if [ "$(basename "$(readlink -f "$WINE")")" = "wine64" ]; then
+		echo "WINEARCH is set to win32."
+		echo "But seems like your Wine is pure 64-bit without multilib support."
+		echo "Use multilib (or 32-bit) Wine or set WINEARCH to win64."
+
+		exit
+	fi
 fi
 
 # Check if Wine has PBA or ESYNC features
@@ -210,7 +237,7 @@ fi
 
 if ! touch "$DIR/write_test"; then
 	clear
-	echo "You have no write permission on this directory!"
+	echo "You have no write permissions on this directory!"
 	echo
 	echo "You can make directory writable by everyone with this command:"
 	echo
