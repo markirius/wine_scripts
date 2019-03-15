@@ -367,8 +367,8 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 				echo "Downloading winetricks"
 
 				wget -O "$DIR/winetricks" "https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks" &>/dev/null
-			elif which winetricks &>/dev/null; then
-				ln -sf "$(which winetricks)" "$DIR/winetricks"
+			elif command -v winetricks &>/dev/null; then
+				ln -sf "$(command -v winetricks)" "$DIR/winetricks"
 			fi
 		fi
 
