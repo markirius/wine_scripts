@@ -66,23 +66,30 @@ SCRIPT_NAME="$(basename "$SCRIPT" | cut -d. -f1)"
 source "$DIR/settings_$SCRIPT_NAME" &>/dev/null
 
 # Generate settings file if it's not exists or incomplete
-if [ -z $CSMT_DISABLE ] || [ -z $DXVK ] || [ -z $USE_PULSEAUDIO ] || [ -z $PBA ]; then
-	CSMT_DISABLE=0; echo "CSMT_DISABLE=0" > "$DIR/settings_$SCRIPT_NAME"
-	USE_PULSEAUDIO=0; echo "USE_PULSEAUDIO=0" >> "$DIR/settings_$SCRIPT_NAME"
-	USE_SYSTEM_WINE=0; echo "USE_SYSTEM_WINE=0" >> "$DIR/settings_$SCRIPT_NAME"
-	RESTORE_RESOLUTION=1; echo "RESTORE_RESOLUTION=1" >> "$DIR/settings_$SCRIPT_NAME"
-	VIRTUAL_DESKTOP=0; echo "VIRTUAL_DESKTOP=0" >> "$DIR/settings_$SCRIPT_NAME"
-	VIRTUAL_DESKTOP_SIZE=800x600; echo "VIRTUAL_DESKTOP_SIZE=800x600" >> "$DIR/settings_$SCRIPT_NAME"
+if [ -z $CSMT_DISABLE ] || [ -z $DXVK ] || [ -z $USE_PULSEAUDIO ] || [ -z $PBA ] || [ -z $GLIBC_REQUIRED ]; then
+	echo "CSMT_DISABLE=0" > "$DIR/settings_$SCRIPT_NAME"
+	echo "USE_PULSEAUDIO=0" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "USE_SYSTEM_WINE=0" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "RESTORE_RESOLUTION=1" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "VIRTUAL_DESKTOP=0" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "VIRTUAL_DESKTOP_SIZE=800x600" >> "$DIR/settings_$SCRIPT_NAME"
 	echo >> "$DIR/settings_$SCRIPT_NAME"
-	DXVK=1; echo "DXVK=1" >> "$DIR/settings_$SCRIPT_NAME"
-	DXVK_HUD=0; echo "DXVK_HUD=0" >> "$DIR/settings_$SCRIPT_NAME"
-	ESYNC=1; echo "ESYNC=1" >> "$DIR/settings_$SCRIPT_NAME"
-	PBA=0; echo "PBA=0" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "DXVK=1" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "DXVK_HUD=0" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "ESYNC=1" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "PBA=0" >> "$DIR/settings_$SCRIPT_NAME"
 	echo >> "$DIR/settings_$SCRIPT_NAME"
-	WINDOWS_VERSION=win7; echo "WINDOWS_VERSION=win7" >> "$DIR/settings_$SCRIPT_NAME"
-	PREFIX_ARCH=win64; echo "PREFIX_ARCH=win64" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "WINDOWS_VERSION=win7" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "PREFIX_ARCH=win64" >> "$DIR/settings_$SCRIPT_NAME"
+	echo >> "$DIR/settings_$SCRIPT_NAME"
+	echo "# Change these GLIBC variables only if you know what you're doing" >> "$DIR/settings_$SCRIPT_NAME"
+	echo >> "$DIR/settings_$SCRIPT_NAME"
+	echo "CHECK_GLIBC=1" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "GLIBC_REQUIRED=2.23" >> "$DIR/settings_$SCRIPT_NAME"
 	echo >> "$DIR/settings_$SCRIPT_NAME"
 	echo "# You can also put custom variables in this file" >> "$DIR/settings_$SCRIPT_NAME"
+
+	source "$DIR/settings_$SCRIPT_NAME"
 fi
 
 export DXVK_HUD
@@ -106,11 +113,13 @@ if [ -d "$DIR/wine" ] && [ ! -x "$DIR/wine/bin/wine" ]; then
 	chmod -R 700 "$DIR/wine"
 fi
 
-# Use system Wine if GLIBC is older than required
-GLIBC_VERSION="$(ldd --version | head -n1 | sed 's/[^0-9]//g')"
+# Use system Wine if GLIBC checking is enabled and GLIBC is older than required
+if [ $CHECK_GLIBC = 1 ]; then
+	GLIBC_VERSION="$(ldd --version | head -n1 | sed 's/\(.*\) //g' | sed 's/\.[^.]*//2g')"
 
-if [ "$GLIBC_VERSION" -lt "223" ]; then
-	USE_SYSTEM_WINE=1
+	if [ "$(echo "${GLIBC_VERSION//./}")" -lt "$(echo "${GLIBC_REQUIRED//./}")" ]; then
+		USE_SYSTEM_WINE=1
+	fi
 fi
 
 # Use system Wine if no Wine found in the directory
