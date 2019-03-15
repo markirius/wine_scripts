@@ -13,4 +13,9 @@ PBA=0
 WINDOWS_VERSION=win7
 PREFIX_ARCH=win64
 
+# Change these GLIBC variables only if you know what you're doing
+
+CHECK_GLIBC=1
+GLIBC_REQUIRED=2.23
+
 # You can also put custom variables in this file
