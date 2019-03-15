@@ -19,15 +19,15 @@
 		meaningful.
 	* Script now output more useful information during prefix creation
 		and hides useless information.
-	* Script output redirection to different file is not removed as it
+	* Script output redirection to different file removed as it
 		breaks some games (For example, The Sims 4)
 	* Resolution restoration is now correctly works with multi-monitor
 		configurations (thanks to guys from RuTracker).
 	* Using of game_info/additional directory is changed and simplified.
 		It now uses directories that match the real one.
 		More info in game_info/readme_en.txt file.
-	* File descriptors limit is not rises to 500k when ESYNC is enabled.
-		Because the old 100k isn't enough for some games.
+	* File descriptors limit rises to 500k when ESYNC is enabled, because
+		the old 100k isn't enough for some games.
 	* GLIBC version checking is added back.
 	* Documentation updated.
 	* Some additional fixes and impovements.
@@ -37,3 +37,13 @@
 	* Directory drive_c/users/Public is now stores in documents directory
 		as sometimes applications stores there saves and settings
 	* Some additional fixes
+=======================================================================
+15.03.19 v1.2.2:
+	* Fixed GLIBC version checking, it now correctly works in different
+		Linux distros and it correctly works with versions with two
+		dots in output (like 2.14.1)
+	* Added two variables to control GLIBC checking: one for disabling
+		version checking and another for changing required version
+	* Added using of wine-development if it's available when using system Wine
+	* Added architecture checking for prefix and Wine, if they are not match
+		script will warn you and exit.
