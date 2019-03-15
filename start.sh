@@ -119,6 +119,7 @@ if [ $USE_SYSTEM_WINE = 0 ] && [ $CHECK_GLIBC = 1 ]; then
 
 	if [ "$(echo "${GLIBC_VERSION//./}")" -lt "$(echo "${GLIBC_REQUIRED//./}")" ]; then
 		USE_SYSTEM_WINE=1
+		OLD_GLIBC=1
 	fi
 fi
 
@@ -590,7 +591,11 @@ echo "======================================================="
 echo -e "\nGame: $GAME\nVersion: $VERSION"
 echo -ne "\nWine: $WINE_VERSION"
 
-if [ $USE_SYSTEM_WINE = 1 ]; then echo -ne " (using system Wine)"; fi
+if [ $USE_SYSTEM_WINE = 1 ]; then
+	echo -ne " (using system Wine)"
+
+	if [ ! -z $OLD_GLIBC ]; then echo -ne " (old GLIBC)"; fi
+fi
 
 echo -ne "\nArch: x$(echo $WINEARCH | tail -c 3)"
 
