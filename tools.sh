@@ -110,12 +110,13 @@ elif [ "$1" = "--icons" ] || [ "$1" = "--remove-icons" ]; then
 		echo "Name=$GAME" >> "$GAME.desktop"
 		echo "Type=Application" >> "$GAME.desktop"
 		echo "Exec=$DIR/start.sh" >> "$GAME.desktop"
-		echo "Icon=$DIR/game_info/icon" >> "$GAME.desktop"
+		echo "Icon=$DIR/game_info/icon.png" >> "$GAME.desktop"
 		echo "Categories=Game;" >> "$GAME.desktop"
 
 		# Copy desktop file
 		mkdir -p "$HOME/.local/share/applications"
 		if [ -d "$HOME/Desktop" ]; then cp "$GAME.desktop" "$HOME/Desktop"; fi
+		if [ -d "$HOME/Área de trabalho" ]; then cp "$GAME.desktop" "$HOME/Área de trabalho"; fi
 		if [ -d "$HOME/Рабочий стол" ]; then cp "$GAME.desktop" "$HOME/Рабочий стол"; fi
 		mv "$GAME.desktop" "$HOME/.local/share/applications"
 
@@ -123,6 +124,7 @@ elif [ "$1" = "--icons" ] || [ "$1" = "--remove-icons" ]; then
 	else
 		# Remove desktop file
 		rm -f "$HOME/Desktop/$GAME.desktop"
+		rm -f "$HOME/Área de trabalho/$GAME.desktop"
 		rm -f "$HOME/Рабочий стол/$GAME.desktop"
 		rm -f "$HOME/.local/share/applications/$GAME.desktop"
 
