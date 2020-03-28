@@ -38,9 +38,8 @@ export DIR="$(dirname "$SCRIPT")"
 
 ## Wine executables
 
-WINE="$DIR/wine/bin/wine"
-WINE64="$DIR/wine/bin/wine64"
-WINESERVER="$DIR/wine/bin/wineserver"
+WINE="$DIR/wine/wine.sh"
+WINE64="$DIR/wine/wine.sh"
 
 ## Wine variables
 
@@ -266,7 +265,6 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 
 	export WINEDLLOVERRIDES="$WINEDLLOVERRIDES;mscoree,mshtml="
 	"$WINE" wineboot &>/dev/null
-	"$WINESERVER" -w
 	export WINEDLLOVERRIDES="winemenubuilder.exe="
 
 	# Create symlink to game directory
@@ -304,7 +302,7 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 		echo -e "Windows Registry Editor Version 5.00\n" > dlloverrides.reg
 		echo -e "[HKEY_CURRENT_USER\Software\Wine\DllOverrides]" >> dlloverrides.reg
 
-		for x in game_info/dlls/*; do
+		for x in game_info/dlls/32/*.dll; do
 			echo "Creating symlink to $x"
 
 			ln -sfr "$x" "$WINEPREFIX/drive_c/windows/system32"
@@ -316,6 +314,19 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 			echo "Registering $(basename $x)"
 
 			"$WINE" regsvr32 "$(basename $x)" &>/dev/null
+		done
+
+		for x in game_info/dlls/64/*.dll; do
+			echo "Creating symlink to $x"
+
+			ln -sfr "$x" "$WINEPREFIX/drive_c/windows/syswow64"
+
+			# Do not override component if required
+			echo -e '"'$(basename $x .dll)'"="native"' >> dlloverrides.reg
+
+			# Register component with regsvr32
+			echo "Registering $(basename $x)"
+
 			"$WINE64" regsvr32 "$(basename $x)" &>/dev/null
 		done
 
@@ -390,7 +401,7 @@ if [ ! -d prefix ] || [ "$USERNAME" != "$(cat .temp_files/lastuser)" ] || [ "$WI
 
 		chmod -R 700 game_info/sh
 
-		for file in game_info/sh/*; do
+		for file in game_info/sh/*.sh; do
 			echo "Executing $file"
 
 			"$file"
@@ -642,9 +653,7 @@ echo
 
 # Launch the game
 cd "$GAME_PATH/$(echo "$GAME_INFO" | sed -n 5p)" || exit
-"$WINESERVER" -w
 "$WINE" $VDESKTOP "$EXE" $ARGS
-"$WINESERVER" -w
 
 # Restore screen resolution
 if [ $RESTORE_RESOLUTION = 1 ]; then
