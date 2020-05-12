@@ -45,7 +45,7 @@ export DIR="$(dirname "$SCRIPT")"
 
 ## Wine executables
 
-export WINE="$DIR/wine/bin/wine"
+export WINE="$DIR/wine/wine.sh"
 export WINESERVER="$DIR/wine/bin/wineserver"
 
 export WINEPREFIX="$DIR/prefix"
@@ -148,7 +148,7 @@ elif [ "$1" = "--kill" ]; then
 elif [ "$1" = "--fm" ]; then
 	"$WINE" winefile
 elif [ "$1" = "--tricks" ]; then
-	if [ ! -f "$DIR/winetricks" ]; then
+	if [ ! -f "$WINE" ]; then
 		echo "Winetricks not found"; exit
 	fi
 
@@ -158,5 +158,5 @@ elif [ "$1" = "--tricks" ]; then
 		fi
 	done
 
-	"$DIR/winetricks" $ARGS
+	"$WINE" winetricks -q $ARGS
 fi
