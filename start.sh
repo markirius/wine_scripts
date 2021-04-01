@@ -38,8 +38,8 @@ export DIR="$(dirname "$SCRIPT")"
 
 ## Wine executables
 
-WINE="$DIR/wine/wine.sh"
-WINE64="$DIR/wine/wine.sh"
+WINE="$DIR/wine/bin/wine"
+WINE64="$DIR/wine/bin/wine64"
 
 ## Wine variables
 

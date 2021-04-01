@@ -45,7 +45,7 @@ export DIR="$(dirname "$SCRIPT")"
 
 ## Wine executables
 
-export WINE="$DIR/wine/wine.sh"
+export WINE="$DIR/wine/bin/wine"
 export WINESERVER="$DIR/wine/bin/wineserver"
 
 export WINEPREFIX="$DIR/prefix"
@@ -148,8 +148,10 @@ elif [ "$1" = "--kill" ]; then
 elif [ "$1" = "--fm" ]; then
 	"$WINE" winefile
 elif [ "$1" = "--tricks" ]; then
-	if [ ! -f "$WINE" ]; then
-		echo "Winetricks not found"; exit
+	if [ ! -f "$DIR/winetricks" ]; then
+		echo "Winetricks not found"
+		curl -LO 'https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks' -o $DIR/winetricks
+		chmod +x $DIR/winetricks
 	fi
 
 	for arg in "$@"; do
@@ -158,5 +160,5 @@ elif [ "$1" = "--tricks" ]; then
 		fi
 	done
 
-	"$WINE" winetricks -q $ARGS
+	$DIR/winetricks -q $ARGS
 fi
