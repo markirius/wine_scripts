@@ -31,6 +31,7 @@ if [ "$1" = "--help" ] || [ ! "$1" ]; then
 	echo -e "--tricks\t\t\trun winetricks"
 	echo -e "--reg\t\t\trun regedit"
 	echo -e "--fm\t\t\trun Wine file manager"
+	echo -e "--app\t\t\trun Wine uninstaller"
 	echo -e "--kill\t\t\tkill all running processes in prefix"
 	echo -e "--clean\t\t\tremove almost all unnecessarry files"
 	echo -e "\t\t\tfrom directory"
@@ -147,6 +148,8 @@ elif [ "$1" = "--kill" ]; then
 	"$WINESERVER" -k
 elif [ "$1" = "--fm" ]; then
 	"$WINE" winefile
+elif [ "$1" = "--app" ]; then
+	"$WINE" uninstaller
 elif [ "$1" = "--tricks" ]; then
 	if [ ! -f "$DIR/winetricks" ]; then
 		echo "Winetricks not found"
