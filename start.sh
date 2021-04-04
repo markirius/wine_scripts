@@ -38,8 +38,8 @@ export DIR="$(dirname "$SCRIPT")"
 
 ## Wine executables
 
-WINE="$DIR/wine/bin/wine"
-WINE64="$DIR/wine/bin/wine64"
+WINE="$DIR/wine/wine.sh"
+WINE64="$DIR/wine/wine.sh"
 
 ## Wine variables
 
@@ -70,8 +70,8 @@ if [ -z $CSMT_DISABLE ] || [ -z $DXVK ] || [ -z $USE_PULSEAUDIO ] || [ -z $PBA ]
 	echo "USE_PULSEAUDIO=0" >> "$DIR/settings_$SCRIPT_NAME"
 	echo "USE_SYSTEM_WINE=0" >> "$DIR/settings_$SCRIPT_NAME"
 	echo "RESTORE_RESOLUTION=1" >> "$DIR/settings_$SCRIPT_NAME"
-	echo "VIRTUAL_DESKTOP=0" >> "$DIR/settings_$SCRIPT_NAME"
-	echo "VIRTUAL_DESKTOP_SIZE=800x600" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "VIRTUAL_DESKTOP=1" >> "$DIR/settings_$SCRIPT_NAME"
+	echo "VIRTUAL_DESKTOP_SIZE=1366x768" >> "$DIR/settings_$SCRIPT_NAME"
 	echo >> "$DIR/settings_$SCRIPT_NAME"
 	echo "DXVK=1" >> "$DIR/settings_$SCRIPT_NAME"
 	echo "DXVK_HUD=0" >> "$DIR/settings_$SCRIPT_NAME"
